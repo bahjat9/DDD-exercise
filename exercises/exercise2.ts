@@ -23,41 +23,54 @@ import { logError } from "./logger.js"
 // make them explicit and impossible to bypass.
 // ============================================================================
 
+type Quantity = number & { readonly __brand: unique symbol }
+
+function createQuantity(n: number): Quantity {
+    if (!Number.isInteger(n)) throw new Error("Quantity must be a whole number")
+    if (n <= 0) throw new Error("Quantity must be positive")
+    if (n > 100) throw new Error("Quantity exceeds maximum per order")
+    return n as Quantity
+}
+
 export function exercise2_PrimitiveQuantity() {
-	type Order = {
-		itemName: string
-		quantity: number // Could be 0, negative, or absurdly high!
-		pricePerUnit: number
-	}
+    type Order = {
+        itemName: string
+        quantity: Quantity // Could be 0, negative, or absurdly high!
+        pricePerUnit: number
+    }
 
-	const order: Order = {
-		itemName: "Pizza",
-		quantity: -3, // Silent bug! Negative quantity
-		pricePerUnit: 15,
-	}
+    try {
+        const order: Order = {
+            itemName: "Pizza",
+            quantity: createQuantity(-3), // Silent bug! Negative quantity
+            pricePerUnit: 15,
+        }
 
-	// TODO: Replace `number` with a Quantity branded type.
-	// Both of the bugs below should become impossible:
-	//   quantity: -3       // <-- negative
-	//   quantity: 50000    // <-- exceeds business limit
+        // TODO: Replace `number` with a Quantity branded type.
+        // Both of the bugs below should become impossible:
+        //   quantity: -3       // <-- negative
+        //   quantity: 50000    // <-- exceeds business limit
 
-	const total = order.quantity * order.pricePerUnit
-	logError(2, "Negative quantity allowed - restaurant owes customer money?", {
-		order,
-		calculatedTotal: total,
-		issue: "Quantity should be a positive integer!",
-	})
+        const total = order.quantity * order.pricePerUnit
+        logError(2, "Negative quantity allowed - restaurant owes customer money?", {
+            order,
+            calculatedTotal: total,
+            issue: "Quantity should be a positive integer!",
+        })
 
-	// Another silent bug - absurd quantity
-	const bulkOrder: Order = {
-		itemName: "Coffee",
-		quantity: 50000, // Silent bug! Unrealistic quantity
-		pricePerUnit: 3,
-	}
+        // Another silent bug - absurd quantity
+        const bulkOrder: Order = {
+            itemName: "Coffee",
+            quantity: createQuantity(50000), // Silent bug! Unrealistic quantity
+            pricePerUnit: 3,
+        }
 
-	logError(2, "Absurd quantity accepted without validation", {
-		order: bulkOrder,
-		calculatedTotal: bulkOrder.quantity * bulkOrder.pricePerUnit,
-		issue: "Should we really accept an order for 50,000 coffees?",
-	})
+        logError(2, "Absurd quantity accepted without validation", {
+            order: bulkOrder,
+            calculatedTotal: bulkOrder.quantity * bulkOrder.pricePerUnit,
+            issue: "Should we really accept an order for 50,000 coffees?",
+        })
+    } catch (error) {
+        console.log("Caught expected error:", error instanceof Error ? error.message : error);
+    }
 }
